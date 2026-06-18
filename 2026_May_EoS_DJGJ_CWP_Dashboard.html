@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vantive DJGJ · EoS CWP 현황 대시보드 · 2026 May</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+  <script>
+    if(typeof Chart!=='undefined'){
+      Chart.defaults.animation=false;
+      if(typeof ChartDataLabels!=='undefined'){
+        Chart.register(ChartDataLabels);
+        Chart.defaults.set('plugins.datalabels',{display:false});
+      }
+    }
+  </script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{interpolate-size:allow-keywords}
+
+    html.theme-light{
+      --claude-coral:#D4633A;
+      --bg:#FBF8F4;--surface:#FFFFFF;--surface-hover:#FDF3EC;--surface-warm:#FEF6EE;
+      --border:rgba(212,99,58,0.12);--border-soft:rgba(212,99,58,0.07);
+      --text:#1E1008;--text-secondary:#8B5E4A;--text-muted:#B08070;
+      --accent:#D4633A;--accent-hover:#B8502D;--accent-secondary:#E8896A;--accent-pale:#F5D5C8;
+      --positive:#5B8A5E;--negative:#B85050;--warning:#C48A2E;--cons:#3E7C8C;
+    }
+    html.theme-dark{
+      --claude-coral:#E8896A;
+      --bg:#150D07;--surface:#1E1208;--surface-hover:#2A1A0F;--surface-warm:#261608;
+      --border:rgba(212,99,58,0.18);--border-soft:rgba(212,99,58,0.08);
+      --text:#F5EDE5;--text-secondary:#C49A80;--text-muted:#9A7058;
+      --accent:#E8896A;--accent-hover:#F5D5C8;--accent-secondary:#D4633A;--accent-pale:#7A4A35;
+      --positive:#7BAE7E;--negative:#D88;--warning:#E0B055;--cons:#6BAEC0;
+    }
+
+    body{font-family:'Noto Sans KR','Inter',sans-serif;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;line-height:1.6;scrollbar-gutter:stable}
+
+    /* HERO — 짙은 네이비/인디고 계열로 CWP 버전 구분 */
+    .hero{background:linear-gradient(120deg,#1A3A6B 0%,#1E5BAD 48%,#6B2572 100%);padding:56px 28px 40px;position:relative;overflow:hidden;text-align:center}
+    .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 12% 35%,rgba(255,255,255,0.10),transparent 60%);pointer-events:none}
+    .hero-inner{position:relative;z-index:2;max-width:1240px;margin:0 auto}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.25);color:rgba(255,255,255,0.9);padding:6px 15px;border-radius:100px;font-size:0.76rem;font-weight:500;letter-spacing:0.04em;margin-bottom:18px}
+    .hero-badge-dot{width:7px;height:7px;border-radius:50%;background:#BFD4FF;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    .hero h1{font-size:2.2rem;font-weight:900;letter-spacing:-0.02em;color:#fff;line-height:1.2;margin-bottom:8px}
+    .hero h1 span{color:#FFE3D4}
+    .hero-sub{font-size:0.88rem;color:rgba(255,255,255,0.75);line-height:1.6}
+    .hero-notice{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.30);color:#fff;padding:5px 14px;border-radius:8px;font-size:0.78rem;font-weight:600;margin-top:12px}
+    .hero-kpi-strip{display:flex;justify-content:center;gap:32px;margin-top:28px;flex-wrap:wrap}
+    .hero-kpi{text-align:center}
+    .hero-kpi-val{font-size:2rem;font-weight:900;color:#fff;letter-spacing:-0.03em;line-height:1}
+    .hero-kpi-lbl{font-size:0.72rem;color:rgba(255,255,255,0.65);font-weight:500;margin-top:4px;letter-spacing:0.05em;text-transform:uppercase}
+    .hero-kpi-divider{width:1px;background:rgba(255,255,255,0.2);align-self:stretch}
+
+    .container{max-width:1240px;margin:0 auto;padding:32px 24px 80px}
+
+    .section-h{font-size:1.05rem;font-weight:800;color:var(--text);margin:40px 0 16px;letter-spacing:-0.01em;display:flex;align-items:center;gap:9px}
+    .section-h::before{content:"";width:4px;height:18px;border-radius:3px;background:var(--accent);flex-shrink:0}
+
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;transition:box-shadow .2s}
+    .card:hover{box-shadow:0 4px 20px rgba(212,99,58,0.10)}
+    .chart-title{font-size:0.98rem;font-weight:700;color:var(--text);margin-bottom:3px}
+    .chart-sub{font-size:0.76rem;color:var(--text-secondary);margin-bottom:16px}
+    .chart-wrap{position:relative}
+
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}
+    .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:box-shadow .2s}
+    .kpi-card:hover{box-shadow:0 4px 20px rgba(212,99,58,0.10)}
+    .kpi-label{font-size:0.70rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px}
+    .kpi-value{font-size:1.8rem;font-weight:900;color:var(--text);line-height:1;margin-bottom:5px;letter-spacing:-0.02em}
+    .kpi-sub{font-size:0.76rem;color:var(--text-secondary);line-height:1.4}
+    .kpi-accent{color:var(--accent)}.kpi-positive{color:var(--positive)}.kpi-negative{color:var(--negative)}.kpi-warning{color:var(--warning)}.kpi-cons{color:var(--cons)}
+
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px}
+
+    .legend-list{list-style:none;padding:0;margin-top:12px;display:flex;flex-direction:column;gap:8px}
+    .legend-item{display:flex;align-items:center;gap:10px;font-size:0.82rem}
+    .legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+    .legend-pct{margin-left:auto;font-weight:700;font-size:0.85rem;color:var(--text)}
+    .legend-cnt{font-size:0.74rem;color:var(--text-muted);margin-left:4px}
+
+    .prog-row{margin-bottom:14px}
+    .prog-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:0.82rem}
+    .prog-name{font-weight:600;color:var(--text)}
+    .prog-pct{font-weight:700;color:var(--accent)}
+    .prog-track{height:8px;background:var(--border-soft);border-radius:100px;overflow:hidden}
+    .prog-fill{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(0.34,1.2,0.64,1)}
+
+    .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+    table{width:100%;border-collapse:collapse;font-size:0.82rem}
+    th,td{padding:10px 13px;text-align:right;border-bottom:1px solid var(--border-soft);white-space:nowrap}
+    th{background:var(--surface-warm);color:var(--text-muted);font-weight:700;font-size:0.70rem;text-transform:uppercase;letter-spacing:0.05em;position:sticky;top:0}
+    td:first-child,th:first-child{text-align:left}
+    tbody tr:hover{background:var(--surface-hover)}
+    .tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:0.70rem;font-weight:700;letter-spacing:0.02em}
+    .tag-미정{background:rgba(176,128,112,0.15);color:var(--text-muted)}
+    .tag-eos{background:rgba(212,99,58,0.15);color:var(--accent)}
+    .tag-철수예정{background:rgba(200,138,46,0.15);color:var(--warning)}
+    .tag-asp{background:rgba(62,124,140,0.15);color:var(--cons)}
+    .tag-철수완료{background:rgba(91,138,94,0.18);color:var(--positive)}
+    .tag-기타{background:var(--border);color:var(--text-secondary)}
+
+    /* CWP 전용 배지 */
+    .cwp-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(212,99,58,0.10);border:1px solid rgba(212,99,58,0.25);color:var(--accent);padding:4px 12px;border-radius:100px;font-size:0.74rem;font-weight:700;margin-bottom:16px}
+
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    .animate{animation:fadeInUp .6s ease-out both}
+    .animate.delay-1{animation-delay:.1s}.animate.delay-2{animation-delay:.2s}
+    .animate.delay-3{animation-delay:.3s}.animate.delay-4{animation-delay:.4s}
+    .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+    .reveal.visible{opacity:1;transform:translateY(0)}
+
+    .viz-menu{position:fixed;top:16px;right:16px;z-index:9999}
+    .viz-menu-toggle{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px);transition:all .2s}
+    .viz-menu-toggle:hover{background:var(--surface-hover)}
+    .viz-menu-dropdown{position:absolute;top:52px;right:0;min-width:200px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .2s;backdrop-filter:blur(16px)}
+    .viz-menu-dropdown.open{opacity:1;visibility:visible;transform:translateY(0)}
+    .viz-menu-dropdown button{width:100%;padding:10px 14px;border:none;border-radius:8px;background:transparent;color:var(--text);font-size:14px;font-family:inherit;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;transition:background .15s}
+    .viz-menu-dropdown button:hover{background:var(--surface-hover)}
+
+    .skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:10000}
+    .skip-link:focus{position:fixed;left:16px;top:16px;width:auto;height:auto;padding:8px 16px;background:var(--accent);color:white;text-decoration:none;border-radius:4px}
+
+    @media print{body{background:white!important;color:black!important}.viz-menu{display:none!important}.card{break-inside:avoid;border:1px solid #ddd;box-shadow:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+    @media(max-width:768px){.grid-2,.grid-3{grid-template-columns:1fr}.hero h1{font-size:1.6rem}.container{padding:20px 16px 60px}}
+    @media(max-width:375px){body{overflow-x:hidden}.kpi-value{font-size:1.5rem}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+  </style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">본문으로 이동</a>
+
+<div class="viz-menu">
+  <button class="viz-menu-toggle" onclick="toggleMenu()" aria-label="메뉴">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+    </svg>
+  </button>
+  <div class="viz-menu-dropdown" id="vizMenuDropdown">
+    <button onclick="cycleTheme()"><span id="themeIcon">☀️</span><span id="themeLabel">라이트</span></button>
+    <button onclick="downloadImage()"><span>📥</span><span>PNG 다운로드</span></button>
+    <button onclick="window.print()"><span>🖨️</span><span>인쇄 / PDF</span></button>
+  </div>
+</div>
+
+<main id="main-content">
+
+  <!-- HERO -->
+  <header class="hero" role="banner">
+    <div class="hero-inner">
+      <div class="hero-badge animate">
+        <span class="hero-badge-dot"></span>
+        Vantive Korea · GHD Water Treatment · CWP Only
+      </div>
+      <h1 class="animate delay-1">DJGJ <span>CWP EoS 현황</span> 대시보드</h1>
+      <p class="hero-sub animate delay-2">2026년 5월 기준 · WRO 300 / WRO 300H 제외 · CWP 64 / CWP 66 / CWP 106H</p>
+      <div class="hero-notice animate delay-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        WRO 300 · WRO 300H 제외 버전 — CWP 계열만 집계
+      </div>
+      <div class="hero-kpi-strip animate delay-3">
+        <div class="hero-kpi">
+          <div class="hero-kpi-val" data-count="76">76</div>
+          <div class="hero-kpi-lbl">CWP 총 장비</div>
+        </div>
+        <div class="hero-kpi-divider"></div>
+        <div class="hero-kpi">
+          <div class="hero-kpi-val" data-count="42">42</div>
+          <div class="hero-kpi-lbl">대전 지역</div>
+        </div>
+        <div class="hero-kpi-divider"></div>
+        <div class="hero-kpi">
+          <div class="hero-kpi-val" data-count="34">34</div>
+          <div class="hero-kpi-lbl">광주 지역</div>
+        </div>
+        <div class="hero-kpi-divider"></div>
+        <div class="hero-kpi">
+          <div class="hero-kpi-val" data-count="27">27</div>
+          <div class="hero-kpi-lbl">EOS 2027 대상</div>
+        </div>
+        <div class="hero-kpi-divider"></div>
+        <div class="hero-kpi">
+          <div class="hero-kpi-val" data-count="41">41</div>
+          <div class="hero-kpi-lbl">Plan 미정</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- ============ SECTION 1: PLAN 타입별 비율 ============ -->
+    <section aria-labelledby="plan-section">
+      <h2 class="section-h" id="plan-section">Plan 타입별 현황 (지역별)</h2>
+
+      <div class="grid-2 animate delay-1">
+
+        <!-- 대전 도넛 -->
+        <div class="card">
+          <div class="cwp-badge">대전 (Daejeon) CWP Only</div>
+          <div class="chart-title">Plan 분포 — 42대 기준</div>
+          <div class="chart-sub">WRO 300 / WRO 300H 제외</div>
+          <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+            <div class="chart-wrap" style="height:220px;width:220px;flex-shrink:0">
+              <canvas id="djPlanChart" role="img" aria-label="대전 CWP Plan 타입 도넛 차트"></canvas>
+            </div>
+            <ul class="legend-list" style="flex:1;min-width:180px">
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#B08070"></span>
+                <span>Plan 미정</span>
+                <span class="legend-cnt">(18)</span>
+                <span class="legend-pct">42.9%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#D4633A"></span>
+                <span>EOS 안내 완료</span>
+                <span class="legend-cnt">(11)</span>
+                <span class="legend-pct">26.2%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#C48A2E"></span>
+                <span>철수 예정</span>
+                <span class="legend-cnt">(6)</span>
+                <span class="legend-pct">14.3%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#3E7C8C"></span>
+                <span>ASP 전환 예정</span>
+                <span class="legend-cnt">(3)</span>
+                <span class="legend-pct">7.1%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#5B8A5E"></span>
+                <span>철수/전환 완료</span>
+                <span class="legend-cnt">(3)</span>
+                <span class="legend-pct">7.1%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#E8896A"></span>
+                <span>신규 설치</span>
+                <span class="legend-cnt">(1)</span>
+                <span class="legend-pct">2.4%</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- 광주 도넛 -->
+        <div class="card">
+          <div class="cwp-badge" style="background:rgba(62,124,140,0.10);border-color:rgba(62,124,140,0.25);color:#3E7C8C">광주 (Gwangju) CWP Only</div>
+          <div class="chart-title">Plan 분포 — 34대 기준</div>
+          <div class="chart-sub">WRO 300 / WRO 300H 제외</div>
+          <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+            <div class="chart-wrap" style="height:220px;width:220px;flex-shrink:0">
+              <canvas id="gjPlanChart" role="img" aria-label="광주 CWP Plan 타입 도넛 차트"></canvas>
+            </div>
+            <ul class="legend-list" style="flex:1;min-width:180px">
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#B08070"></span>
+                <span>Plan 미정</span>
+                <span class="legend-cnt">(23)</span>
+                <span class="legend-pct">67.6%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#D4633A"></span>
+                <span>EOS 안내 완료</span>
+                <span class="legend-cnt">(5)</span>
+                <span class="legend-pct">14.7%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#C48A2E"></span>
+                <span>철수 예정</span>
+                <span class="legend-cnt">(3)</span>
+                <span class="legend-pct">8.8%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#5B8A5E"></span>
+                <span>철수/전환 완료</span>
+                <span class="legend-cnt">(2)</span>
+                <span class="legend-pct">5.9%</span>
+              </li>
+              <li class="legend-item">
+                <span class="legend-dot" style="background:#9A7058"></span>
+                <span>미사용 (병원자산)</span>
+                <span class="legend-cnt">(1)</span>
+                <span class="legend-pct">2.9%</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ SECTION 2: EOS 연도별 분포 ============ -->
+    <section data-reveal aria-labelledby="eos-section">
+      <h2 class="section-h" id="eos-section">EoS 연도별 분포 (CWP 전용)</h2>
+      <div class="card" style="margin-bottom:20px">
+        <div class="chart-title">EoS Year 분포 — 대전 vs 광주 (CWP 계열)</div>
+        <div class="chart-sub">WRO 제외 후 2030년 EoS 항목 없음 · 2027년이 가장 시급</div>
+        <div class="chart-wrap" style="height:300px">
+          <canvas id="eosYearChart" role="img" aria-label="EoS 연도별 대전 광주 CWP 비교 막대 차트"></canvas>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="kpi-card animate">
+          <div class="kpi-label">EoS 2027 (긴급)</div>
+          <div class="kpi-value kpi-negative" data-count="27">27</div>
+          <div class="kpi-sub">대전 19 · 광주 8<br>CWP 전체의 <strong>35.5%</strong></div>
+        </div>
+        <div class="kpi-card animate delay-1">
+          <div class="kpi-label">EoS 2028</div>
+          <div class="kpi-value kpi-warning" data-count="8">8</div>
+          <div class="kpi-sub">대전 4 · 광주 4<br>CWP 전체의 <strong>10.5%</strong></div>
+        </div>
+        <div class="kpi-card animate delay-2">
+          <div class="kpi-label">EoS TBD (미확정)</div>
+          <div class="kpi-value" style="color:var(--text-muted)" data-count="41">41</div>
+          <div class="kpi-sub">대전 19 · 광주 22<br>CWP 전체의 <strong>53.9%</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 3: CWP 타입별 분포 ============ -->
+    <section data-reveal aria-labelledby="monitor-section">
+      <h2 class="section-h" id="monitor-section">CWP 제품 타입별 현황</h2>
+      <div class="grid-2">
+
+        <div class="card">
+          <div class="chart-title">대전 (Daejeon) — CWP 타입별</div>
+          <div class="chart-sub">총 42대 기준</div>
+          <div class="prog-row">
+            <div class="prog-label"><span class="prog-name">CWP 64</span><span class="prog-pct">40.5% <span style="color:var(--text-muted);font-weight:400">(17대)</span></span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:0%;background:#D4633A" data-width="40.5"></div></div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-label"><span class="prog-name">CWP 66</span><span class="prog-pct">38.1% <span style="color:var(--text-muted);font-weight:400">(16대)</span></span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:0%;background:#E8896A" data-width="38.1"></div></div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-label"><span class="prog-name">CWP 106 H</span><span class="prog-pct">21.4% <span style="color:var(--text-muted);font-weight:400">(9대)</span></span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:0%;background:#C48A2E" data-width="21.4"></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="chart-title">광주 (Gwangju) — CWP 타입별</div>
+          <div class="chart-sub">총 34대 기준</div>
+          <div class="prog-row">
+            <div class="prog-label"><span class="prog-name">CWP 66</span><span class="prog-pct">44.1% <span style="color:var(--text-muted);font-weight:400">(15대)</span></span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:0%;background:#3E7C8C" data-width="44.1"></div></div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-label"><span class="prog-name">CWP 64</span><span class="prog-pct">41.2% <span style="color:var(--text-muted);font-weight:400">(14대)</span></span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:0%;background:#6BAEC0" data-width="41.2"></div></div>
+          </div>
+          <div class="prog-row">
+            <div class="prog-label"><span class="prog-name">CWP 106 H</span><span class="prog-pct">14.7% <span style="color:var(--text-muted);font-weight:400">(5대)</span></span></div>
+            <div class="prog-track"><div class="prog-fill" style="width:0%;background:#C48A2E" data-width="14.7"></div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CWP 전체 타입별 비교 차트 -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="chart-title">CWP 타입별 대전 vs 광주 비교</div>
+        <div class="chart-sub">CWP 64 · CWP 66 · CWP 106H 세 모델 기준</div>
+        <div class="chart-wrap" style="height:280px">
+          <canvas id="monitorChart" role="img" aria-label="CWP 타입 대전 광주 비교 막대 차트"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 4: 판매/임대 비교 ============ -->
+    <section data-reveal aria-labelledby="ds-section">
+      <h2 class="section-h" id="ds-section">판매 / 임대 구분 (CWP)</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="chart-title">대전 vs 광주 — 판매·임대 비율</div>
+          <div class="chart-sub">CWP 계열만 · D/S 유형 기준</div>
+          <div class="chart-wrap" style="height:280px">
+            <canvas id="dsChart" role="img" aria-label="CWP 판매 임대 비율 막대 차트"></canvas>
+          </div>
+        </div>
+        <div class="card" style="display:flex;flex-direction:column;gap:20px">
+          <div>
+            <div class="kpi-label" style="margin-bottom:12px">대전 D/S 현황 (CWP)</div>
+            <div style="display:flex;gap:24px">
+              <div>
+                <div style="font-size:1.6rem;font-weight:900;color:#E8896A">59.5%</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary)">임대 (25대)</div>
+              </div>
+              <div>
+                <div style="font-size:1.6rem;font-weight:900;color:#D4633A">40.5%</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary)">판매 (17대)</div>
+              </div>
+            </div>
+            <div style="margin-top:10px;font-size:0.78rem;color:var(--text-muted)">전체(79대) 대비 임대 비중: 31.6% → CWP만: <strong style="color:var(--accent)">59.5%</strong></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:20px">
+            <div class="kpi-label" style="margin-bottom:12px">광주 D/S 현황 (CWP)</div>
+            <div style="display:flex;gap:24px">
+              <div>
+                <div style="font-size:1.6rem;font-weight:900;color:#6BAEC0">79.4%</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary)">임대 (27대)</div>
+              </div>
+              <div>
+                <div style="font-size:1.6rem;font-weight:900;color:#3E7C8C">20.6%</div>
+                <div style="font-size:0.78rem;color:var(--text-secondary)">판매 (7대)</div>
+              </div>
+            </div>
+            <div style="margin-top:10px;font-size:0.78rem;color:var(--text-muted)">전체(64대) 대비 임대 비중: 43.8% → CWP만: <strong style="color:var(--cons)">79.4%</strong></div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:16px;font-size:0.80rem;color:var(--text-secondary);background:rgba(212,99,58,0.05);border-radius:8px;padding:12px">
+            💡 CWP는 임대 비중이 매우 높음 (대전 59.5% / 광주 79.4%). EoS 도래 시 임대 계약 종료 및 장비 회수 또는 업그레이드 협의 필요
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 5: Plan 타입 비교 막대 ============ -->
+    <section data-reveal aria-labelledby="compare-section">
+      <h2 class="section-h" id="compare-section">Plan 타입 — 지역 비교 (대전 vs 광주)</h2>
+      <div class="card" style="margin-bottom:20px">
+        <div class="chart-title">Plan 카테고리별 장비 수 비교 (CWP 전용)</div>
+        <div class="chart-sub">대전 42대 · 광주 34대 · CWP 총 76대 기준</div>
+        <div class="chart-wrap" style="height:300px">
+          <canvas id="planCompareChart" role="img" aria-label="CWP Plan 타입 대전 광주 비교 차트"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SECTION 6: 요약 테이블 ============ -->
+    <section data-reveal aria-labelledby="table-section">
+      <h2 class="section-h" id="table-section">지역별 Plan 타입 요약 테이블 (CWP)</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="lft">Plan 유형</th>
+              <th>대전 (수)</th>
+              <th>대전 (%)</th>
+              <th>광주 (수)</th>
+              <th>광주 (%)</th>
+              <th>합계</th>
+              <th>전체 비율</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag-미정">Plan 미정</span></td>
+              <td>18</td><td>42.9%</td><td>23</td><td>67.6%</td>
+              <td><strong>41</strong></td><td>53.9%</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-eos">EOS 안내 완료</span></td>
+              <td>11</td><td>26.2%</td><td>5</td><td>14.7%</td>
+              <td><strong>16</strong></td><td>21.1%</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-철수예정">철수 예정</span></td>
+              <td>6</td><td>14.3%</td><td>3</td><td>8.8%</td>
+              <td><strong>9</strong></td><td>11.8%</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-asp">ASP 전환 예정</span></td>
+              <td>3</td><td>7.1%</td><td>0</td><td>0.0%</td>
+              <td><strong>3</strong></td><td>3.9%</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-철수완료">철수/전환 완료</span></td>
+              <td>3</td><td>7.1%</td><td>2</td><td>5.9%</td>
+              <td><strong>5</strong></td><td>6.6%</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-기타">신규 설치</span></td>
+              <td>1</td><td>2.4%</td><td>0</td><td>0.0%</td>
+              <td><strong>1</strong></td><td>1.3%</td>
+            </tr>
+            <tr>
+              <td><span class="tag tag-기타">미사용 (병원자산)</span></td>
+              <td>0</td><td>0.0%</td><td>1</td><td>2.9%</td>
+              <td><strong>1</strong></td><td>1.3%</td>
+            </tr>
+            <tr style="background:var(--surface-warm);font-weight:700">
+              <td>합계</td>
+              <td>42</td><td>100%</td><td>34</td><td>100%</td>
+              <td><strong>76</strong></td><td>100%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer style="margin-top:48px;text-align:center;font-size:0.76rem;color:var(--text-muted)">
+      <p>Vantive Korea · GHD Water Treatment · EoS CWP Dashboard · 2026년 5월 기준</p>
+      <p style="margin-top:4px">WRO 300 (10대 대전·9대 광주) 및 WRO 300H (27대 대전·21대 광주) 제외 · CWP 76개 장비 기준</p>
+    </footer>
+
+  </div>
+</main>
+
+<script>
+  function toggleMenu(){
+    var d=document.getElementById('vizMenuDropdown');
+    if(d)d.classList.toggle('open');
+  }
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.viz-menu')){var d=document.getElementById('vizMenuDropdown');if(d)d.classList.remove('open');}
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){var d=document.getElementById('vizMenuDropdown');if(d)d.classList.remove('open');}
+  });
+
+  var currentTheme='light';
+  function applyTheme(t){
+    document.documentElement.className='theme-'+t;
+    document.getElementById('themeIcon').textContent=t==='dark'?'🌙':'☀️';
+    document.getElementById('themeLabel').textContent=t==='dark'?'다크':'라이트';
+    localStorage.setItem('viz-theme-cwp',t);
+    currentTheme=t;
+    if(typeof onThemeChange==='function')onThemeChange();
+  }
+  function cycleTheme(){applyTheme(currentTheme==='dark'?'light':'dark');}
+  var savedTheme=localStorage.getItem('viz-theme-cwp');
+  applyTheme(savedTheme||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+
+  document.querySelectorAll('[data-reveal]').forEach(function(el){el.classList.add('reveal');});
+  var revObs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('visible');revObs.unobserve(e.target);}});
+  },{threshold:0.1});
+  document.querySelectorAll('.reveal').forEach(function(el){revObs.observe(el);});
+
+  function animateCounters(){
+    document.querySelectorAll('[data-count]').forEach(function(el){
+      if(el.dataset.counted)return;
+      el.dataset.counted='1';
+      var target=parseFloat(el.dataset.count),suffix=el.dataset.suffix||'';
+      var start=performance.now(),duration=1200;
+      (function tick(now){
+        var p=Math.min((now-start)/duration,1),eased=1-Math.pow(1-p,3);
+        el.textContent=Math.round(target*eased).toLocaleString()+suffix;
+        if(p<1)requestAnimationFrame(tick);
+      })(start);
+    });
+  }
+  var cEl=document.querySelector('[data-count]');
+  if(cEl){
+    var cObs=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){if(e.isIntersecting){animateCounters();cObs.disconnect();}});
+    },{threshold:0.3});
+    cObs.observe(cEl);
+  }
+
+  function animateProgressBars(){
+    document.querySelectorAll('.prog-fill').forEach(function(el){
+      if(el.dataset.animated)return;
+      el.dataset.animated='1';
+      setTimeout(function(){el.style.width=el.dataset.width+'%';},100);
+    });
+  }
+  var pbObs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){if(e.isIntersecting){animateProgressBars();pbObs.disconnect();}});
+  },{threshold:0.2});
+  var pbEl=document.querySelector('.prog-fill');
+  if(pbEl)pbObs.observe(pbEl.closest('.card'));
+
+  var chartsBuilt=false;
+
+  function getColors(){
+    var isDark=document.documentElement.classList.contains('theme-dark');
+    return{
+      text:isDark?'#F5EDE5':'#1E1008',
+      textSec:isDark?'#C49A80':'#8B5E4A',
+      grid:isDark?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.05)',
+      coral:isDark?'#E8896A':'#D4633A',
+      cons:isDark?'#6BAEC0':'#3E7C8C',
+      warm:isDark?'#E0B055':'#C48A2E',
+      pos:isDark?'#7BAE7E':'#5B8A5E',
+      muted:isDark?'#9A7058':'#B08070'
+    };
+  }
+
+  function resetCanvas(id){
+    var old=document.getElementById(id);
+    if(!old)return null;
+    var par=old.parentNode,c=document.createElement('canvas');
+    c.id=id;c.setAttribute('role','img');
+    par.replaceChild(c,old);return c;
+  }
+
+  function buildCharts(){
+    if(chartsBuilt||typeof Chart==='undefined')return;
+    var cl=getColors();
+    var isDark=document.documentElement.classList.contains('theme-dark');
+    var pc=isDark
+      ?['#9A7058','#E8896A','#E0B055','#6BAEC0','#7BAE7E','#F5D5C8']
+      :['#B08070','#D4633A','#C48A2E','#3E7C8C','#5B8A5E','#E8896A'];
+    var bdr=isDark?'#1E1208':'#fff';
+
+    // DJ Plan Donut
+    var djCtx=resetCanvas('djPlanChart');
+    if(djCtx){
+      new Chart(djCtx,{
+        type:'doughnut',
+        data:{
+          labels:['Plan 미정','EOS 안내 완료','철수 예정','ASP 전환 예정','철수/전환 완료','신규 설치'],
+          datasets:[{data:[18,11,6,3,3,1],backgroundColor:pc,borderColor:bdr,borderWidth:3,hoverOffset:6}]
+        },
+        options:{responsive:true,maintainAspectRatio:false,cutout:'70%',
+          plugins:{legend:{display:false},
+            tooltip:{enabled:true,padding:10,cornerRadius:8,
+              callbacks:{label:function(ctx){return ' '+ctx.label+': '+ctx.parsed+'대 ('+((ctx.parsed/42)*100).toFixed(1)+'%)';}}}
+          }
+        }
+      });
+    }
+
+    // GJ Plan Donut
+    var gjColors=isDark
+      ?['#9A7058','#E0B055','#7BAE7E','#C49A80','#E8896A']
+      :['#B08070','#C48A2E','#5B8A5E','#9A7058','#D4633A'];
+    var gjCtx=resetCanvas('gjPlanChart');
+    if(gjCtx){
+      new Chart(gjCtx,{
+        type:'doughnut',
+        data:{
+          labels:['Plan 미정','EOS 안내 완료','철수 예정','철수/전환 완료','미사용 (병원자산)'],
+          datasets:[{data:[23,5,3,2,1],backgroundColor:gjColors,borderColor:bdr,borderWidth:3,hoverOffset:6}]
+        },
+        options:{responsive:true,maintainAspectRatio:false,cutout:'70%',
+          plugins:{legend:{display:false},
+            tooltip:{enabled:true,padding:10,cornerRadius:8,
+              callbacks:{label:function(ctx){return ' '+ctx.label+': '+ctx.parsed+'대 ('+((ctx.parsed/34)*100).toFixed(1)+'%)';}}}
+          }
+        }
+      });
+    }
+
+    // EOS Year Chart
+    var eosCtx=resetCanvas('eosYearChart');
+    if(eosCtx){
+      new Chart(eosCtx,{
+        type:'bar',
+        data:{
+          labels:['2027','2028','TBD'],
+          datasets:[
+            {label:'대전',data:[19,4,19],backgroundColor:isDark?'rgba(232,137,106,0.85)':'rgba(212,99,58,0.85)',borderRadius:6,borderSkipped:false},
+            {label:'광주',data:[8,4,22],backgroundColor:isDark?'rgba(107,174,192,0.80)':'rgba(62,124,140,0.75)',borderRadius:6,borderSkipped:false}
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          layout:{padding:{top:24,right:16,bottom:4,left:4}},
+          plugins:{
+            legend:{labels:{color:cl.text,font:{family:"'Noto Sans KR','Inter',sans-serif",size:13},padding:20}},
+            tooltip:{enabled:true,padding:12,cornerRadius:8},
+            datalabels:{display:true,anchor:'end',align:'top',color:cl.textSec,font:{size:11,weight:'600',family:"'Inter',sans-serif"},formatter:function(v){return v+'대';}}
+          },
+          scales:{
+            x:{grid:{color:cl.grid},ticks:{color:cl.text,font:{size:14}}},
+            y:{grid:{color:cl.grid},ticks:{color:cl.textSec,font:{size:12}},beginAtZero:true,max:30}
+          }
+        },
+        plugins:[typeof ChartDataLabels!=='undefined'?ChartDataLabels:null].filter(Boolean)
+      });
+    }
+
+    // Monitor Type Chart
+    var monCtx=resetCanvas('monitorChart');
+    if(monCtx){
+      new Chart(monCtx,{
+        type:'bar',
+        data:{
+          labels:['CWP 64','CWP 66','CWP 106 H'],
+          datasets:[
+            {label:'대전',data:[17,16,9],backgroundColor:isDark?'rgba(232,137,106,0.85)':'rgba(212,99,58,0.85)',borderRadius:6,borderSkipped:false},
+            {label:'광주',data:[14,15,5],backgroundColor:isDark?'rgba(107,174,192,0.80)':'rgba(62,124,140,0.75)',borderRadius:6,borderSkipped:false}
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          layout:{padding:{top:24,right:16,bottom:4,left:4}},
+          plugins:{
+            legend:{labels:{color:cl.text,font:{family:"'Noto Sans KR','Inter',sans-serif",size:13},padding:20}},
+            tooltip:{enabled:true,padding:12,cornerRadius:8},
+            datalabels:{display:true,anchor:'end',align:'top',color:cl.textSec,font:{size:12,weight:'600',family:"'Inter',sans-serif"},formatter:function(v){return v+'대';}}
+          },
+          scales:{
+            x:{grid:{color:cl.grid},ticks:{color:cl.text,font:{size:13,weight:'600'}}},
+            y:{grid:{color:cl.grid},ticks:{color:cl.textSec,font:{size:12}},beginAtZero:true,max:22}
+          }
+        },
+        plugins:[typeof ChartDataLabels!=='undefined'?ChartDataLabels:null].filter(Boolean)
+      });
+    }
+
+    // D/S Chart
+    var dsCtx=resetCanvas('dsChart');
+    if(dsCtx){
+      new Chart(dsCtx,{
+        type:'bar',
+        data:{
+          labels:['대전','광주'],
+          datasets:[
+            {label:'임대',data:[25,27],backgroundColor:isDark?'rgba(232,137,106,0.85)':'rgba(212,99,58,0.85)',borderRadius:6,borderSkipped:false},
+            {label:'판매',data:[17,7],backgroundColor:isDark?'rgba(107,174,192,0.75)':'rgba(62,124,140,0.75)',borderRadius:6,borderSkipped:false}
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          layout:{padding:{top:24,right:8,bottom:4,left:4}},
+          plugins:{
+            legend:{labels:{color:cl.text,font:{family:"'Noto Sans KR','Inter',sans-serif",size:13},padding:20}},
+            tooltip:{enabled:true,padding:12,cornerRadius:8},
+            datalabels:{display:true,anchor:'end',align:'top',color:cl.textSec,font:{size:12,weight:'600',family:"'Inter',sans-serif"},formatter:function(v){return v+'대';}}
+          },
+          scales:{
+            x:{grid:{color:cl.grid},ticks:{color:cl.text,font:{size:14,weight:'600'}}},
+            y:{grid:{color:cl.grid},ticks:{color:cl.textSec,font:{size:12}},beginAtZero:true,max:35}
+          }
+        },
+        plugins:[typeof ChartDataLabels!=='undefined'?ChartDataLabels:null].filter(Boolean)
+      });
+    }
+
+    // Plan Compare Horizontal
+    var pcCtx=resetCanvas('planCompareChart');
+    if(pcCtx){
+      new Chart(pcCtx,{
+        type:'bar',
+        data:{
+          labels:['Plan 미정','EOS 안내 완료','철수 예정','ASP 전환 예정','철수/전환 완료','신규설치/미사용'],
+          datasets:[
+            {label:'대전',data:[18,11,6,3,3,1],backgroundColor:isDark?'rgba(232,137,106,0.85)':'rgba(212,99,58,0.85)',borderRadius:5,borderSkipped:false},
+            {label:'광주',data:[23,5,3,0,2,1],backgroundColor:isDark?'rgba(107,174,192,0.80)':'rgba(62,124,140,0.75)',borderRadius:5,borderSkipped:false}
+          ]
+        },
+        options:{
+          indexAxis:'y',responsive:true,maintainAspectRatio:false,
+          layout:{padding:{top:4,right:60,bottom:4,left:4}},
+          plugins:{
+            legend:{labels:{color:cl.text,font:{family:"'Noto Sans KR','Inter',sans-serif",size:13},padding:20}},
+            tooltip:{enabled:true,padding:12,cornerRadius:8},
+            datalabels:{display:true,anchor:'end',align:'right',color:cl.textSec,font:{size:11,weight:'600',family:"'Inter',sans-serif"},formatter:function(v){return v>0?v+'대':'';}},
+          },
+          scales:{
+            x:{grid:{color:cl.grid},ticks:{color:cl.textSec,font:{size:12}},beginAtZero:true,max:33},
+            y:{grid:{display:false},ticks:{color:cl.text,font:{size:12,family:"'Noto Sans KR',sans-serif"}}}
+          }
+        },
+        plugins:[typeof ChartDataLabels!=='undefined'?ChartDataLabels:null].filter(Boolean)
+      });
+    }
+
+    chartsBuilt=true;
+  }
+
+  function onThemeChange(){chartsBuilt=false;setTimeout(buildCharts,120);}
+
+  if(typeof Chart!=='undefined'){
+    Chart.defaults.animation=false;
+    if(typeof ChartDataLabels!=='undefined'){
+      Chart.register(ChartDataLabels);
+      Chart.defaults.set('plugins.datalabels',{display:false});
+    }
+  }
+
+  window.addEventListener('load',function(){setTimeout(buildCharts,100);});
+
+  async function downloadImage(){
+    var menu=document.querySelector('.viz-menu');
+    if(menu)menu.style.display='none';
+    try{
+      var url=await htmlToImage.toPng(document.body,{quality:1,pixelRatio:2,filter:function(n){return!n.classList||!n.classList.contains('viz-menu');}});
+      var a=document.createElement('a');a.href=url;
+      a.download='DJGJ-EoS-CWP-Dashboard-2026-May.png';a.click();
+    }catch(e){console.error('Download failed:',e);}
+    if(menu)menu.style.display='';
+  }
+</script>
+</body>
+</html>
