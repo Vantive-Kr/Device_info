@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko" class="theme-light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vantive · 지역별 HD·CWP 현황 대시보드 · 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script>
+  if(typeof Chart!=='undefined'){
+    Chart.defaults.animation=false;
+    if(typeof ChartDataLabels!=='undefined'){
+      Chart.register(ChartDataLabels);
+      Chart.defaults.set('plugins.datalabels',{display:false});
+    }
+  }
+</script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  /* ===== BRAND PALETTE (Vantive) =====
+     PLUM #72256B · CREAM #FFFAEB · PINE #105742 · EUCALYPTUS #6CA07A · SAGE #CDDFD7 */
+  :root{
+    --plum:#72256B; --plum-dk:#571B52; --plum-soft:#EDE0EB;
+    --cream:#FFFAEB; --pine:#105742; --pine-dk:#0C4234; --euc:#6CA07A; --sage:#CDDFD7;
+    --bg:#FBF5EC; --surface:#FFFFFF; --surface-warm:#FBF2E4; --surface-hover:#FAF3EA;
+    --border:rgba(114,37,107,0.14); --border-soft:rgba(114,37,107,0.07);
+    --text:#241019; --text-secondary:#6E5763; --text-muted:#9C8791;
+    --hd:#105742; --cwp:#72256B; --track:#CDDFD7;
+  }
+
+  /* Acumin Pro per brand guide; falls back to Arial (Latin) then Noto Sans KR (non-Latin) */
+  body{font-family:'Acumin Pro',Arial,'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);
+       -webkit-font-smoothing:antialiased;line-height:1.6}
+  .display{font-family:'Acumin Pro','Arial Black',Arial,'Noto Sans KR',sans-serif}
+
+  /* HERO */
+  .hero{background:linear-gradient(120deg,#105742 0%,#1A7A58 46%,#72256B 100%);padding:52px 28px 40px;position:relative;overflow:hidden;text-align:center}
+  .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 14% 30%,rgba(255,255,255,0.10),transparent 60%);pointer-events:none}
+  .hero-inner{position:relative;z-index:2;max-width:1240px;margin:0 auto}
+  .hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.28);color:rgba(255,255,255,0.92);padding:6px 15px;border-radius:100px;font-size:0.76rem;font-weight:700;letter-spacing:0.08em;margin-bottom:18px;text-transform:uppercase}
+  .hero-badge-dot{width:7px;height:7px;border-radius:50%;background:#CDDFD7;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .hero h1{font-size:2.3rem;font-weight:900;letter-spacing:0.01em;color:#fff;line-height:1.15;margin-bottom:10px;text-transform:uppercase}
+  .hero h1 span{color:#CDDFD7}
+  .hero-sub{font-size:0.9rem;color:rgba(255,255,255,0.78);line-height:1.6}
+  .hero-kpi-strip{display:flex;justify-content:center;gap:30px;margin-top:28px;flex-wrap:wrap}
+  .hero-kpi{text-align:center}
+  .hero-kpi-val{font-size:2.1rem;font-weight:900;color:#fff;letter-spacing:-0.02em;line-height:1}
+  .hero-kpi-lbl{font-size:0.7rem;color:rgba(255,255,255,0.7);font-weight:700;margin-top:5px;letter-spacing:0.08em;text-transform:uppercase}
+  .hero-kpi-divider{width:1px;background:rgba(255,255,255,0.22);align-self:stretch}
+
+  .container{max-width:1240px;margin:0 auto;padding:32px 24px 80px}
+
+  /* SECTION HEADER + brand arrows */
+  .section-h{font-size:1.05rem;font-weight:900;color:var(--text);margin:44px 0 6px;letter-spacing:0.02em;display:flex;align-items:center;gap:11px;text-transform:uppercase}
+  .arrows{color:var(--plum);font-weight:900;letter-spacing:-2px;font-size:1.1rem}
+  .section-sub{font-size:0.8rem;color:var(--text-secondary);margin:0 0 18px 34px}
+  .divider{height:2px;background:linear-gradient(90deg,var(--plum) 0%,var(--plum) 22%,var(--border) 22%);border:none;margin:0 0 4px}
+
+  /* CARDS */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;transition:box-shadow .2s}
+  .card:hover{box-shadow:0 6px 24px rgba(114,37,107,0.10)}
+  .chart-title{font-size:0.95rem;font-weight:900;color:var(--text);margin-bottom:2px;letter-spacing:0.01em}
+  .chart-sub{font-size:0.74rem;color:var(--text-secondary);margin-bottom:14px}
+  .chart-wrap{position:relative;height:230px}
+
+  /* KPI GRID */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+  .kpi-card::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent-bar,var(--plum))}
+  .kpi-card.hd{--accent-bar:var(--hd)} .kpi-card.cwp{--accent-bar:var(--cwp)}
+  .kpi-label{font-size:0.68rem;font-weight:900;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:9px}
+  .kpi-value{font-size:1.9rem;font-weight:900;color:var(--text);line-height:1;margin-bottom:6px;letter-spacing:-0.02em}
+  .kpi-sub{font-size:0.75rem;color:var(--text-secondary)}
+  .kpi-hd .kpi-value{color:var(--hd)} .kpi-cwp .kpi-value{color:var(--cwp)}
+
+  /* REGION PROGRESS CARDS */
+  .region-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .rcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+  .rcard.featured{border:2px solid var(--plum);background:linear-gradient(180deg,rgba(114,37,107,0.035),transparent 40%)}
+  .rcard-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+  .rcard-name{font-size:1rem;font-weight:900;color:var(--text);letter-spacing:0.01em}
+  .rcard-tag{font-size:0.64rem;font-weight:900;letter-spacing:0.08em;text-transform:uppercase;color:var(--plum);background:var(--plum-soft);padding:3px 10px;border-radius:100px}
+  .prog-row{margin-bottom:14px}
+  .prog-row:last-child{margin-bottom:0}
+  .prog-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .prog-name{font-weight:900;font-size:0.9rem;letter-spacing:0.03em}
+  .prog-name.hd{color:var(--hd)} .prog-name.cwp{color:var(--cwp)}
+  .prog-frac{font-size:0.94rem;color:var(--text-secondary)}
+  .prog-frac b{color:var(--text);font-weight:700}
+  .prog-track{height:9px;background:var(--track);border-radius:100px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:100px}
+  .prog-fill.hd{background:var(--hd)} .prog-fill.cwp{background:var(--cwp)}
+  .prog-pct{text-align:right;font-size:0.86rem;font-weight:700;color:var(--text-secondary);margin-top:4px}
+
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:8px}
+
+  /* LEGEND */
+  .legend{display:flex;gap:18px;align-items:center;margin-top:14px;font-size:0.76rem;color:var(--text-secondary);flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+
+  /* TABLE */
+  .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:0.98rem}
+  th,td{padding:10px 14px;text-align:right;border-bottom:1px solid var(--border-soft);white-space:nowrap}
+  th{background:var(--surface-warm);color:var(--text-muted);font-weight:900;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em}
+  td:first-child,th:first-child{text-align:left}
+  td[rowspan]{vertical-align:middle;font-weight:700}
+  td.gubun,th.gubun{text-align:center}
+  /* grouped period headers (전반기 / 연간) */
+  th.spacer{background:transparent;border:none}
+  th.grp{text-align:center;font-size:0.72rem;padding:8px 14px;border-bottom:2px solid}
+  th.grp-half{background:rgba(114,37,107,0.10);color:var(--plum-dk);border-bottom-color:var(--plum)}
+  th.grp-annual{background:rgba(16,87,66,0.10);color:var(--pine-dk);border-bottom-color:var(--pine)}
+  th.col-half{color:var(--plum)}
+  th.col-annual{color:var(--pine-dk)}
+  .sep{border-left:2px solid rgba(16,87,66,0.28)}
+  tbody tr:hover{background:var(--surface-hover)}
+  tr.total-row td{background:var(--plum-soft);font-weight:900;color:var(--plum-dk)}
+  .chip{display:inline-block;padding:2px 9px;border-radius:100px;font-size:0.7rem;font-weight:900}
+  .chip.hd{background:rgba(16,87,66,0.12);color:var(--hd)}
+  .chip.cwp{background:rgba(114,37,107,0.12);color:var(--cwp)}
+  /* best / worst index in table */
+  .mark{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:100px;font-weight:900}
+  .mark.best{background:rgba(108,160,122,0.22);color:var(--pine)}
+  .mark.worst{background:rgba(114,37,107,0.14);color:var(--plum)}
+  .mark .ar{font-size:0.66rem;line-height:1}
+
+  .foot{margin-top:26px;font-size:0.74rem;color:var(--text-muted);text-align:center;line-height:1.7}
+
+  @media(max-width:768px){.grid-2{grid-template-columns:1fr}.hero h1{font-size:1.7rem}.hero-kpi-strip{gap:18px}.container{padding:22px 15px 60px}}
+  @media print{body{background:#fff}.card,.rcard,.kpi-card{break-inside:avoid;box-shadow:none}*{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge"><span class="hero-badge-dot"></span>Vantive · 2026 Regional Report</div>
+    <h1 class="display">지역별 <span>HD · CWP</span> 완료 현황</h1>
+    <p class="hero-sub">Seoul · BSDG · DJGJ &nbsp;|&nbsp; 전반기(YTM 06) 진행 & 연간(FY2026) 예상</p>
+    <div class="hero-kpi-strip">
+      <div class="hero-kpi"><div class="hero-kpi-val">47%</div><div class="hero-kpi-lbl">HD 연간 완료율</div></div>
+      <div class="hero-kpi-divider"></div>
+      <div class="hero-kpi"><div class="hero-kpi-val">39%</div><div class="hero-kpi-lbl">CWP 연간 완료율</div></div>
+      <div class="hero-kpi-divider"></div>
+      <div class="hero-kpi"><div class="hero-kpi-val">554</div><div class="hero-kpi-lbl">연간 완료 (HD+CWP)</div></div>
+      <div class="hero-kpi-divider"></div>
+      <div class="hero-kpi"><div class="hero-kpi-val">1,176</div><div class="hero-kpi-lbl">연간 Target</div></div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ===== SECTION 1: ANNUAL ===== -->
+  <hr class="divider">
+  <div class="section-h"><span class="arrows">&gt;&gt;&gt;</span>Annual Forecast · FY 2026</div>
+  <div class="section-sub">Target 대비 Complete · 완료율 (Rate)</div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="chart-title">지역별 HD 완료 현황 · 연간 대비</div>
+      <div class="chart-sub">Complete(완료) + 잔여(Remaining) = Annual Target · Σ = 지역 Target 합계</div>
+      <div class="chart-wrap"><canvas id="hdAnnual" role="img" aria-label="지역별 HD 완료 대비 목표 누적 막대"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="chart-title">지역별 CWP 완료 현황 · 연간 대비</div>
+      <div class="chart-sub">Complete(완료) + 잔여(Remaining) = Annual Target · Σ = 지역 Target 합계</div>
+      <div class="chart-wrap"><canvas id="cwpAnnual" role="img" aria-label="지역별 CWP 완료 대비 목표 누적 막대"></canvas></div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><span class="swatch" style="background:var(--hd)"></span>HD 완료</span>
+    <span><span class="swatch" style="background:var(--cwp)"></span>CWP 완료</span>
+    <span><span class="swatch" style="background:var(--sage)"></span>잔여 (Target − Complete)</span>
+  </div>
+
+  <div class="region-grid" style="margin-top:20px">
+    <div class="rcard featured">
+      <div class="rcard-head"><span class="rcard-name">연간 전지역 합산</span><span class="rcard-tag">ANNUAL</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>537</b> / 1,132</span></div><div class="prog-track"><div class="prog-fill hd" style="width:47%"></div></div><div class="prog-pct">47%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>17</b> / 44</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:39%"></div></div><div class="prog-pct">39%</div></div>
+    </div>
+    <div class="rcard">
+      <div class="rcard-head"><span class="rcard-name">Seoul</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>362</b> / 635</span></div><div class="prog-track"><div class="prog-fill hd" style="width:57%"></div></div><div class="prog-pct">57%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>11</b> / 24</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:46%"></div></div><div class="prog-pct">46%</div></div>
+    </div>
+    <div class="rcard">
+      <div class="rcard-head"><span class="rcard-name">DJGJ</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>95</b> / 309</span></div><div class="prog-track"><div class="prog-fill hd" style="width:31%"></div></div><div class="prog-pct">31%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>3</b> / 12</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:25%"></div></div><div class="prog-pct">25%</div></div>
+    </div>
+    <div class="rcard">
+      <div class="rcard-head"><span class="rcard-name">BSDG</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>80</b> / 188</span></div><div class="prog-track"><div class="prog-fill hd" style="width:43%"></div></div><div class="prog-pct">43%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>3</b> / 8</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:38%"></div></div><div class="prog-pct">38%</div></div>
+    </div>
+  </div>
+
+  <!-- ===== SECTION 2: YTM 06 ===== -->
+  <hr class="divider" style="margin-top:46px">
+  <div class="section-h"><span class="arrows">&gt;&gt;&gt;</span>First-Half Progress · YTM 06</div>
+  <div class="section-sub">Plan 대비 Actual(Net) · 진행률 (Progress)</div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="chart-title">지역별 전반기 진행률 (Actual / Plan)</div>
+    <div class="chart-sub">HD vs CWP · YTM 06</div>
+    <div class="chart-wrap" style="height:250px"><canvas id="ytmChart" role="img" aria-label="지역별 HD와 CWP 전반기 진행률 그룹 막대"></canvas></div>
+  </div>
+
+  <div class="region-grid">
+    <div class="rcard featured">
+      <div class="rcard-head"><span class="rcard-name">전반기 전지역 합산</span><span class="rcard-tag">YTM 06</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>512</b> / 598</span></div><div class="prog-track"><div class="prog-fill hd" style="width:86%"></div></div><div class="prog-pct">86%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>15</b> / 20</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:75%"></div></div><div class="prog-pct">75%</div></div>
+    </div>
+    <div class="rcard">
+      <div class="rcard-head"><span class="rcard-name">Seoul</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>362</b> / 426</span></div><div class="prog-track"><div class="prog-fill hd" style="width:85%"></div></div><div class="prog-pct">85%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>11</b> / 14</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:79%"></div></div><div class="prog-pct">79%</div></div>
+    </div>
+    <div class="rcard">
+      <div class="rcard-head"><span class="rcard-name">DJGJ</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>82</b> / 82</span></div><div class="prog-track"><div class="prog-fill hd" style="width:100%"></div></div><div class="prog-pct">100%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>2</b> / 3</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:67%"></div></div><div class="prog-pct">67%</div></div>
+    </div>
+    <div class="rcard">
+      <div class="rcard-head"><span class="rcard-name">BSDG</span></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name hd">HD</span><span class="prog-frac"><b>68</b> / 90</span></div><div class="prog-track"><div class="prog-fill hd" style="width:76%"></div></div><div class="prog-pct">76%</div></div>
+      <div class="prog-row"><div class="prog-label"><span class="prog-name cwp">CWP</span><span class="prog-frac"><b>2</b> / 3</span></div><div class="prog-track"><div class="prog-fill cwp" style="width:67%"></div></div><div class="prog-pct">67%</div></div>
+    </div>
+  </div>
+
+  <!-- ===== DATA TABLE ===== -->
+  <hr class="divider" style="margin-top:46px">
+  <div class="section-h"><span class="arrows">&gt;&gt;&gt;</span>Data Summary</div>
+  <div class="section-sub">전반기(YTM 06) · 연간(FY2026)</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="spacer" colspan="2"></th>
+          <th class="grp grp-half" colspan="3">전반기 · YTM 06 (First-Half)</th>
+          <th class="grp grp-annual sep" colspan="3">연간 · FY2026 (Annual)</th>
+        </tr>
+        <tr>
+          <th>지역</th><th class="gubun">구분</th>
+          <th class="col-half">Plan</th><th class="col-half">Actual</th><th class="col-half">진행률</th>
+          <th class="col-annual sep">Target</th><th class="col-annual">Complete</th><th class="col-annual">완료율</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="total-row"><td rowspan="2">전지역 합산</td><td class="gubun"><span class="chip hd">HD</span></td><td>598</td><td>512</td><td>86%</td><td class="sep">1,132</td><td>537</td><td>47%</td></tr>
+        <tr class="total-row"><td class="gubun"><span class="chip cwp">CWP</span></td><td>20</td><td>15</td><td>75%</td><td class="sep">44</td><td>17</td><td>39%</td></tr>
+        <tr><td rowspan="2">Seoul</td><td class="gubun"><span class="chip hd">HD</span></td><td>426</td><td>362</td><td>85%</td><td class="sep">635</td><td>362</td><td>57%</td></tr>
+        <tr><td class="gubun"><span class="chip cwp">CWP</span></td><td>14</td><td>11</td><td>79%</td><td class="sep">24</td><td>11</td><td>46%</td></tr>
+        <tr><td rowspan="2">DJGJ</td><td class="gubun"><span class="chip hd">HD</span></td><td>82</td><td>82</td><td>100%</td><td class="sep">309</td><td>95</td><td>31%</td></tr>
+        <tr><td class="gubun"><span class="chip cwp">CWP</span></td><td>3</td><td>2</td><td>67%</td><td class="sep">12</td><td>3</td><td>25%</td></tr>
+        <tr><td rowspan="2">BSDG</td><td class="gubun"><span class="chip hd">HD</span></td><td>90</td><td>68</td><td>76%</td><td class="sep">188</td><td>80</td><td>43%</td></tr>
+        <tr><td class="gubun"><span class="chip cwp">CWP</span></td><td>3</td><td>2</td><td>67%</td><td class="sep">8</td><td>3</td><td>38%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    막대 = HD(Pine) · CWP(Plum) · 잔여(Sage) &nbsp;|&nbsp; 전반기 진행률 = Actual/Plan, 연간 완료율 = Complete/Target<br>
+    Vantive Brand Palette · Acumin Pro (fallback Arial / Noto Sans) · Generated 2026
+  </div>
+</div>
+
+<script>
+const HD='#105742', CWP='#72256B', SAGE='#CDDFD7', PLUM='#72256B';
+const FONT="'Acumin Pro',Arial,'Noto Sans KR',sans-serif";
+const TICK='#6E5763';
+
+// draws a thin total(Σ Target) bracket line above each bar
+const totalBracket = {
+  id:'totalBracket',
+  afterDatasetsDraw(chart, args, opts){
+    const meta = chart.getDatasetMeta(1);
+    if(!meta || !meta.data) return;
+    const x0 = chart.scales.x.getPixelForValue(0);
+    const targets = opts.targets || [];
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = '#9A8791';
+    ctx.fillStyle = '#5A4650';
+    ctx.lineWidth = 1.2;
+    ctx.font = "900 12px "+FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    meta.data.forEach((bar,i)=>{
+      const xEnd = bar.x;
+      const lineY = (bar.y - bar.height/2) - 6;
+      ctx.beginPath();
+      ctx.moveTo(x0, lineY); ctx.lineTo(xEnd, lineY);
+      ctx.moveTo(x0, lineY); ctx.lineTo(x0, lineY+4);
+      ctx.moveTo(xEnd, lineY); ctx.lineTo(xEnd, lineY+4);
+      ctx.stroke();
+      ctx.fillText('Σ '+targets[i], (x0+xEnd)/2, lineY-1);
+    });
+    ctx.restore();
+  }
+};
+
+function stacked(id, color, labels, complete, target){
+  const remaining = target.map((t,i)=>t-complete[i]);
+  const maxT = Math.max(...target);
+  new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'완료',data:complete,backgroundColor:color,maxBarThickness:42,borderRadius:{topRight:0,bottomRight:0,topLeft:6,bottomLeft:6},
+        datalabels:{display:true,color:'#fff',anchor:'center',align:'center',clamp:true,font:{family:FONT,weight:900,size:14},formatter:(v)=>v}},
+      {label:'잔여',data:remaining,backgroundColor:SAGE,maxBarThickness:42,borderRadius:{topRight:6,bottomRight:6,topLeft:0,bottomLeft:0},
+        datalabels:{display:true,anchor:'center',align:'center',clamp:true,color:'#3B5D4C',font:{family:FONT,weight:700,size:14},formatter:(v)=>v}}
+    ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      layout:{padding:{right:12,top:28}},
+      scales:{
+        x:{stacked:true,display:false,grid:{display:false},beginAtZero:true,max:maxT},
+        y:{stacked:true,grid:{display:false},ticks:{color:'#241019',font:{family:FONT,weight:900,size:16}}}
+      },
+      plugins:{legend:{display:false},tooltip:{enabled:true},totalBracket:{targets:target}}
+    },
+    plugins:[totalBracket]
+  });
+}
+
+stacked('hdAnnual', HD, ['Seoul','DJGJ','BSDG'], [362,95,80], [635,309,188]);
+stacked('cwpAnnual', CWP, ['Seoul','DJGJ','BSDG'], [11,3,3], [24,12,8]);
+
+// dashed box highlighting the 전지역 합산 (index 0) group
+const totalHighlight = {
+  id:'totalHighlight',
+  beforeDatasetsDraw(chart){
+    const b0 = chart.getDatasetMeta(0).data[0];
+    const b1 = chart.getDatasetMeta(1).data[0];
+    if(!b0 || !b1) return;
+    const ctx = chart.ctx, ca = chart.chartArea;
+    const left = Math.min(b0.x - b0.width/2, b1.x - b1.width/2) - 16;
+    const right = Math.max(b0.x + b0.width/2, b1.x + b1.width/2) + 16;
+    const top = ca.top - 4, bottom = ca.bottom;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(left, top, right-left, bottom-top, 10);
+    ctx.fillStyle = 'rgba(114,37,107,0.07)';
+    ctx.fill();
+    ctx.setLineDash([5,3]);
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = '#72256B';
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#72256B';
+    ctx.font = "900 11px "+FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('TOTAL · 합산', (left+right)/2, top-3);
+    ctx.restore();
+  }
+};
+
+new Chart(document.getElementById('ytmChart'),{
+  type:'bar',
+  data:{labels:['전지역 합산','Seoul','DJGJ','BSDG'],
+    datasets:[
+      {label:'HD 진행률',data:[86,85,100,76],backgroundColor:HD,borderRadius:6,maxBarThickness:34,
+        datalabels:{display:true,color:HD,anchor:'end',align:'top',font:{family:FONT,weight:900,size:14},formatter:v=>v+'%'}},
+      {label:'CWP 진행률',data:[75,79,67,67],backgroundColor:CWP,borderRadius:6,maxBarThickness:34,
+        datalabels:{display:true,color:CWP,anchor:'end',align:'top',font:{family:FONT,weight:900,size:14},formatter:v=>v+'%'}}
+    ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    layout:{padding:{top:30}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#241019',font:{family:FONT,weight:900,size:14}}},
+      y:{beginAtZero:true,max:100,grid:{color:'rgba(114,37,107,0.07)'},ticks:{color:TICK,font:{family:FONT,size:13},callback:v=>v+'%'}}
+    },
+    plugins:{legend:{display:true,position:'top',align:'end',labels:{color:TICK,font:{family:FONT,weight:700,size:14},boxWidth:12,boxHeight:12,usePointStyle:true,pointStyle:'rectRounded'}},tooltip:{enabled:true}}
+  },
+  plugins:[totalHighlight]
+});
+</script>
+</body>
+</html>
